@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>VS Robotics</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body { 
+        font-family: 'Segoe UI', sans-serif; 
+        background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+        overflow: hidden;
+        color: #fff;
+    }
+
+    #app-container {
+        display: grid;
+        grid-template-columns: 280px 1fr 280px;
+        grid-template-rows: 60px 1fr 70px;
+        height: 100vh;
+        gap: 0;
+    }
+
+    /* Top Bar */
+    #top-bar {
+        grid-column: 1 / -1;
+        background: rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid rgba(0, 210, 255, 0.2);
+        display: flex;
+        align-items: center;
+        padding: 0 30px;
+        z-index: 100;
+    }
+
+    #top-bar h1 {
+        font-size: 18px;
+        font-weight: 600;
+        color: #00d2ff;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .robot-icon {
+        width: 28px;
+        height: 28px;
+    }
+
+    .status-indicator {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 16px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 20px;
+        font-size: 13px;
+    }
+
+    .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #ff3333;
+        animation: pulse 2s ease-in-out infinite;
+    }
+
+    .status-dot.online { background: #00ff88; }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+
+    /* Left Panel */
+    #left-panel {
+        background: rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(10px);
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 16px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .info-card {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        padding: 14px;
+        margin-bottom: 12px;
+    }
+
+    .info-card h3 {
+        font-size: 13px;
+        color: #00d2ff;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        margin-bottom: 10px;
+    }
+
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 6px 0;
+        font-size: 12px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .info-row:last-child { border-bottom: none; }
+
+    .info-label { color: #999; }
+
+    .info-value {
+        color: #fff;
+        font-weight: 600;
+        font-family: 'Courier New', monospace;
+    }
+
+    /* More Options at bottom of left panel */
+    .more-section {
+        margin-top: auto;
+    }
+
+    .more-toggle {
+        width: 100%;
+        padding: 10px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 6px;
+        color: #aaa;
+        cursor: pointer;
+        font-size: 12px;
+        text-align: center;
+        transition: all 0.2s;
+        margin-bottom: 12px;
+    }
+
+    .more-toggle:hover {
+        background: rgba(255, 255, 255, 0.08);
+        color: #fff;
+    }
+
+    .more-content {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+    }
+
+    .more-content.expanded {
+        max-height: 500px;
+    }
+
+    /* Map Container */
+    #map-container { 
+        background: #0a0e1f;
+        position: relative;
+        cursor: crosshair;
+    }
+
+    .goal-marker {
+        position: absolute;
+        width: 12px;
+        height: 12px;
+        background: #00ff88;
+        border: 2px solid rgba(0, 255, 136, 0.3);
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+        animation: goalPulse 1.5s ease-in-out infinite;
+        box-shadow: 0 0 15px rgba(0, 255, 136, 0.6);
+    }
+
+    @keyframes goalPulse {
+        0%, 100% { 
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+        }
+        50% { 
+            transform: translate(-50%, -50%) scale(1.4);
+            opacity: 0.6;
+        }
+    }
+
+    /* Right Panel */
+    #right-panel {
+        background: rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(10px);
+        border-left: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 16px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .control-section {
+        margin-bottom: 16px;
+    }
+
+    .control-section h3 {
+        font-size: 12px;
+        color: #00d2ff;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        margin-bottom: 10px;
+    }
+
+    .btn {
+        width: 100%;
+        padding: 10px;
+        background: rgba(0, 210, 255, 0.1);
+        border: 1px solid rgba(0, 210, 255, 0.3);
+        color: #00d2ff;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 600;
+        transition: all 0.2s;
+        margin-bottom: 6px;
+    }
+
+    .btn:hover {
+        background: rgba(0, 210, 255, 0.2);
+        border-color: #00d2ff;
+        transform: translateY(-1px);
+    }
+
+    .btn:active { transform: translateY(0); }
+
+    .btn-danger {
+        background: rgba(255, 51, 51, 0.1);
+        border-color: rgba(255, 51, 51, 0.3);
+        color: #ff3333;
+    }
+
+    .btn-danger:hover {
+        background: rgba(255, 51, 51, 0.2);
+        border-color: #ff3333;
+    }
+
+    /* Teleop at bottom right - smaller */
+    .teleop-section {
+        margin-top: auto;
+    }
+
+    .teleop-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 5px;
+        margin-top: 8px;
+    }
+
+    .teleop-btn {
+        aspect-ratio: 1;
+        background: rgba(0, 210, 255, 0.15);
+        border: 1px solid rgba(0, 210, 255, 0.3);
+        border-radius: 6px;
+        color: #00d2ff;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s;
+        user-select: none;
+        padding: 8px;
+    }
+
+    .teleop-btn:hover {
+        background: rgba(0, 210, 255, 0.25);
+        border-color: #00d2ff;
+    }
+
+    .teleop-btn:active {
+        background: rgba(0, 210, 255, 0.35);
+        transform: scale(0.95);
+    }
+
+    .teleop-btn.empty {
+        background: transparent;
+        border: none;
+        cursor: default;
+    }
+
+    /* Zoom Controls */
+    #zoom-controls {
+        position: absolute;
+        bottom: 16px;
+        right: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        z-index: 10;
+    }
+
+    .zoom-btn {
+        width: 38px;
+        height: 38px;
+        background: rgba(0, 0, 0, 0.75);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(0, 210, 255, 0.3);
+        border-radius: 6px;
+        color: #00d2ff;
+        font-size: 18px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+    }
+
+    .zoom-btn:hover {
+        background: #00d2ff;
+        color: #000;
+        transform: scale(1.1);
+    }
+
+    /* Bottom Bar */
+    #bottom-bar {
+        grid-column: 1 / -1;
+        background: rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(10px);
+        border-top: 1px solid rgba(0, 210, 255, 0.2);
+        padding: 16px 30px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        font-size: 12px;
+        color: #888;
+    }
+
+    .help-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .kbd {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 3px 7px;
+        border-radius: 3px;
+        font-size: 10px;
+        font-family: monospace;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    /* Select Dropdown */
+    select {
+        width: 100%;
+        padding: 8px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(0, 210, 255, 0.3);
+        border-radius: 6px;
+        color: #fff;
+        font-size: 12px;
+        cursor: pointer;
+        margin-bottom: 6px;
+    }
+
+    select option {
+        background: #1a1f3a;
+    }
+
+    /* Input Field */
+    input[type="text"] {
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 6px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(138, 43, 226, 0.3);
+        border-radius: 6px;
+        color: #fff;
+        font-size: 12px;
+    }
+
+    input[type="text"]::placeholder {
+        color: #666;
+    }
+
+    /* Speed Slider */
+    .speed-control {
+        margin-top: 8px;
+    }
+
+    .speed-control label {
+        font-size: 10px;
+        color: #aaa;
+        display: block;
+        margin-bottom: 4px;
+    }
+
+    .speed-slider {
+        width: 100%;
+        height: 5px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 3px;
+        outline: none;
+        -webkit-appearance: none;
+    }
+
+    .speed-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 14px;
+        height: 14px;
+        background: #00d2ff;
+        border-radius: 50%;
+        cursor: pointer;
+    }
+
+    .speed-slider::-moz-range-thumb {
+        width: 14px;
+        height: 14px;
+        background: #00d2ff;
+        border-radius: 50%;
+        cursor: pointer;
+        border: none;
+    }
+
+    .speed-value {
+        text-align: center;
+        font-size: 11px;
+        color: #00d2ff;
+        margin-top: 4px;
+        font-weight: 600;
+    }
+
+    /* Notification */
+    .notification {
+        position: fixed;
+        top: 70px;
+        right: 20px;
+        background: rgba(0, 210, 255, 0.95);
+        padding: 12px 18px;
+        border-radius: 6px;
+        color: #000;
+        font-weight: 600;
+        font-size: 13px;
+        z-index: 1000;
+        transform: translateX(400px);
+        transition: transform 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0, 210, 255, 0.3);
+    }
+
+    .notification.show {
+        transform: translateX(0);
+    }
+
+    .notification.error {
+        background: rgba(255, 51, 51, 0.95);
+        color: #fff;
+    }
+
+    .notification.success {
+        background: rgba(0, 255, 136, 0.95);
+        color: #000;
+    }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/easeljs@1/lib/easeljs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/eventemitter2@6/lib/eventemitter2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/roslib@1/build/roslib.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/ros2d@0/build/ros2d.min.js"></script>
+
+<script type="text/javascript">
+  var ros;
+  var viewer;
+  var gridClient;
+  var zoomLevel = 50;
+  var pathShape;
+  var teleopSpeed = 0.5;
+
+  function init() {
+    console.log("🚀 Initializing VS Robotics...");
+    
+    // ROS Connection
+    ros = new ROSLIB.Ros({
+      url: 'ws://localhost:9090'
+    });
+
+    ros.on('connection', function() {
+      console.log('✅ Connected to ROS Bridge');
+      updateConnectionStatus(true);
+      showNotification('Connected to ROS', 'success');
+    });
+
+    ros.on('error', function(error) {
+      console.error('❌ ROS Error:', error);
+      updateConnectionStatus(false);
+      showNotification('ROS Connection Error', 'error');
+    });
+
+    ros.on('close', function() {
+      console.log('🔌 Disconnected from ROS');
+      updateConnectionStatus(false);
+      showNotification('Disconnected from ROS', 'error');
+    });
+
+    // Map Viewer Setup
+    var mapContainer = document.getElementById('map-container');
+    viewer = new ROS2D.Viewer({
+      divID: 'map-container',
+      width: mapContainer.clientWidth,
+      height: mapContainer.clientHeight,
+      background: '#0a0e1f'
+    });
+
+    console.log("🗺️ Map viewer created");
+
+    // Occupancy Grid Client - FIXED VERSION
+    gridClient = new ROS2D.OccupancyGridClient({
+      ros: ros,
+      rootObject: viewer.scene,
+      topic: '/costmap_2d',
+      continuous: true
+    });
+
+    console.log("📡 Subscribed to /costmap_2d");
+
+    // Path visualization
+    pathShape = new createjs.Shape();
+    viewer.scene.addChild(pathShape);
+
+    // Click to set goal
+    mapContainer.addEventListener('click', function(e) {
+      var rect = mapContainer.getBoundingClientRect();
+      var mouseX = e.clientX - rect.left;
+      var mouseY = e.clientY - rect.top;
+      
+      var worldPt = viewer.scene.globalToLocal(mouseX, mouseY);
+      var goal_x = worldPt.x;
+      var goal_y = -worldPt.y;
+
+      sendGoal(goal_x, goal_y);
+      showGoalMarker(mouseX, mouseY);
+    });
+
+    // Subscribe to robot pose (odom)
+    var poseTopic = new ROSLIB.Topic({
+      ros: ros,
+      name: '/odom',
+      messageType: 'nav_msgs/Odometry'
+    });
+
+    poseTopic.subscribe(function(message) {
+      var pos = message.pose.pose.position;
+      var ori = message.pose.pose.orientation;
+      
+      document.getElementById('pos-x').innerText = pos.x.toFixed(2);
+      document.getElementById('pos-y').innerText = pos.y.toFixed(2);
+      
+      var yaw = Math.atan2(2.0 * (ori.w * ori.z + ori.x * ori.y), 
+                           1.0 - 2.0 * (ori.y * ori.y + ori.z * ori.z));
+      document.getElementById('pos-yaw').innerText = (yaw * 180 / Math.PI).toFixed(1) + '°';
+      
+      var vel = message.twist.twist;
+      document.getElementById('vel-linear').innerText = vel.linear.x.toFixed(2);
+      document.getElementById('vel-angular').innerText = vel.angular.z.toFixed(2);
+    });
+
+    // Subscribe to planned path
+    var pathTopic = new ROSLIB.Topic({
+      ros: ros,
+      name: '/planned_path',
+      messageType: 'nav_msgs/Path'
+    });
+
+    pathTopic.subscribe(function(message) {
+      drawPath(message.poses);
+      document.getElementById('path-length').innerText = message.poses.length;
+    });
+
+    // Map updates
+    gridClient.on('change', function() {
+      if (gridClient.currentGrid) {
+        var info = gridClient.currentGrid.info;
+        document.getElementById('map-size').innerText = info.width + '×' + info.height;
+        document.getElementById('map-res').innerText = info.resolution.toFixed(3) + ' m';
+        
+        // Auto-center on first load
+        var mapCenterX = (info.width * info.resolution) / 2.0 + info.origin.position.x;
+        var mapCenterY = (info.height * info.resolution) / 2.0 + info.origin.position.y;
+        
+        viewer.scene.scaleX = zoomLevel;
+        viewer.scene.scaleY = zoomLevel;
+        viewer.scene.x = mapContainer.clientWidth / 2 - (mapCenterX * zoomLevel);
+        viewer.scene.y = mapContainer.clientHeight / 2 + (mapCenterY * zoomLevel);
+        
+        document.getElementById("zoom-val").innerText = zoomLevel.toFixed(0) + "x";
+        console.log("🗺️ Map updated:", info.width + "x" + info.height);
+      }
+    });
+
+    // Zoom with wheel
+    mapContainer.addEventListener('wheel', function(e) {
+      e.preventDefault();
+      
+      var mouseX = e.clientX;
+      var mouseY = e.clientY;
+      var worldPt = viewer.scene.globalToLocal(mouseX, mouseY);
+      
+      var zoomDelta = -e.deltaY * 0.05;
+      zoomLevel += zoomDelta;
+      
+      if (zoomLevel < 5) zoomLevel = 5;
+      if (zoomLevel > 200) zoomLevel = 200;
+      
+      viewer.scene.scaleX = zoomLevel;
+      viewer.scene.scaleY = zoomLevel;
+      
+      viewer.scene.x = mouseX - worldPt.x * zoomLevel;
+      viewer.scene.y = mouseY - worldPt.y * zoomLevel;
+      
+      document.getElementById("zoom-val").innerText = zoomLevel.toFixed(0) + "x";
+    }, { passive: false });
+
+    // Pan controls
+    var isPanning = false;
+    var lastPanX = 0;
+    var lastPanY = 0;
+
+    mapContainer.addEventListener('mousedown', function(e) {
+      if (e.button === 1 || (e.button === 0 && e.ctrlKey)) {
+        e.preventDefault();
+        isPanning = true;
+        lastPanX = e.clientX;
+        lastPanY = e.clientY;
+        mapContainer.style.cursor = 'grabbing';
+      }
+    });
+
+    mapContainer.addEventListener('mousemove', function(e) {
+      if (isPanning) {
+        var dx = e.clientX - lastPanX;
+        var dy = e.clientY - lastPanY;
+        viewer.scene.x += dx;
+        viewer.scene.y += dy;
+        lastPanX = e.clientX;
+        lastPanY = e.clientY;
+      }
+    });
+
+    mapContainer.addEventListener('mouseup', function() {
+      isPanning = false;
+      mapContainer.style.cursor = 'crosshair';
+    });
+
+    mapContainer.addEventListener('mouseleave', function() {
+      isPanning = false;
+      mapContainer.style.cursor = 'crosshair';
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'c' || e.key === 'C') {
+        recenterMap();
+      }
+    });
+  }
+
+  function updateConnectionStatus(online) {
+    var statusDot = document.querySelector('.status-dot');
+    var statusText = document.getElementById('status-text');
+    
+    if (online) {
+      statusDot.classList.add('online');
+      statusText.innerText = 'CONNECTED';
+    } else {
+      statusDot.classList.remove('online');
+      statusText.innerText = 'DISCONNECTED';
+    }
+  }
+
+  function drawPath(poses) {
+    pathShape.graphics.clear();
+    
+    if (poses.length < 2) return;
+    
+    pathShape.graphics.setStrokeStyle(0.05);
+    pathShape.graphics.beginStroke("rgba(0, 255, 136, 0.6)");
+    
+    pathShape.graphics.moveTo(poses[0].pose.position.x, -poses[0].pose.position.y);
+    
+    for (var i = 1; i < poses.length; i++) {
+      pathShape.graphics.lineTo(poses[i].pose.position.x, -poses[i].pose.position.y);
+    }
+  }
+
+  function showGoalMarker(x, y) {
+    var existing = document.querySelector('.goal-marker');
+    if (existing) existing.remove();
+    
+    var marker = document.createElement('div');
+    marker.className = 'goal-marker';
+    marker.style.left = x + 'px';
+    marker.style.top = y + 'px';
+    document.getElementById('map-container').appendChild(marker);
+    
+    setTimeout(function() {
+      marker.remove();
+    }, 2500);
+  }
+
+  function sendGoal(x, y) {
+    var goalTopic = new ROSLIB.Topic({
+      ros: ros,
+      name: '/goal_pose',
+      messageType: 'geometry_msgs/PoseStamped'
+    });
+
+    var goal = new ROSLIB.Message({
+      header: {
+        frame_id: 'map',
+        stamp: { sec: 0, nanosec: 0 }
+      },
+      pose: {
+        position: { x: x, y: y, z: 0 },
+        orientation: { x: 0, y: 0, z: 0, w: 1 }
+      }
+    });
+
+    goalTopic.publish(goal);
+    console.log("🎯 Goal sent:", x.toFixed(2), y.toFixed(2));
+    showNotification('Goal: (' + x.toFixed(2) + ', ' + y.toFixed(2) + ')', 'success');
+  }
+
+  function zoom(delta) {
+    zoomLevel += delta;
+    if (zoomLevel < 5) zoomLevel = 5;
+    if (zoomLevel > 200) zoomLevel = 200;
+    viewer.scene.scaleX = zoomLevel;
+    viewer.scene.scaleY = zoomLevel;
+    document.getElementById("zoom-val").innerText = zoomLevel.toFixed(0) + "x";
+  }
+
+  function recenterMap() {
+    if (gridClient.currentGrid) {
+      var info = gridClient.currentGrid.info;
+      var mapCenterX = (info.width * info.resolution) / 2.0 + info.origin.position.x;
+      var mapCenterY = (info.height * info.resolution) / 2.0 + info.origin.position.y;
+      var mapContainer = document.getElementById('map-container');
+      viewer.scene.x = mapContainer.clientWidth / 2 - (mapCenterX * zoomLevel);
+      viewer.scene.y = mapContainer.clientHeight / 2 + (mapCenterY * zoomLevel);
+      showNotification('Map centered', 'success');
+    }
+  }
+
+  function stopRobot() {
+    sendTeleopCommand(0, 0);
+    showNotification('Emergency Stop!', 'error');
+  }
+
+  function sendTeleopCommand(linear, angular) {
+    var cmdVel = new ROSLIB.Topic({
+      ros: ros,
+      name: '/cmd_vel_drive',
+      messageType: 'geometry_msgs/Twist'
+    });
+
+    var twist = new ROSLIB.Message({
+      linear: { x: linear * teleopSpeed, y: 0, z: 0 },
+      angular: { x: 0, y: 0, z: angular * teleopSpeed }
+    });
+
+    cmdVel.publish(twist);
+  }
+
+  function stopTeleop() {
+    sendTeleopCommand(0, 0);
+  }
+
+  function updateTeleopSpeed(value) {
+    teleopSpeed = value;
+    document.getElementById('speed-value').innerText = (value * 100).toFixed(0) + '%';
+  }
+
+  function toggleMore() {
+    var content = document.getElementById('more-content');
+    var toggle = document.getElementById('more-toggle');
+    
+    if (content.classList.contains('expanded')) {
+      content.classList.remove('expanded');
+      toggle.innerText = '▼ More Options';
+    } else {
+      content.classList.add('expanded');
+      toggle.innerText = '▲ Less Options';
+    }
+  }
+
+  function saveMap() {
+    var mapName = document.getElementById('map-name-input').value || 'new_map';
+    
+    var service = new ROSLIB.Service({
+      ros: ros,
+      name: '/save_map_3d',
+      serviceType: 'std_srvs/Trigger'
+    });
+
+    var request = new ROSLIB.ServiceRequest({});
+
+    service.callService(request, function(result) {
+      if (result.success) {
+        showNotification('Map saved: ' + mapName, 'success');
+      } else {
+        showNotification('Failed to save map', 'error');
+      }
+    });
+  }
+
+  function showNotification(message, type) {
+    var notification = document.getElementById('notification');
+    notification.innerText = message;
+    notification.className = 'notification ' + (type || 'success');
+    notification.classList.add('show');
+    
+    setTimeout(function() {
+      notification.classList.remove('show');
+    }, 3000);
+  }
+</script>
+</head>
+
+<body onload="init()">
+  <div id="app-container">
+    <!-- Top Bar -->
+    <div id="top-bar">
+      <h1>
+        <svg class="robot-icon" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2C10.89 2 10 2.89 10 4V5H7C5.89 5 5 5.89 5 7V19C5 20.11 5.89 21 7 21H17C18.11 21 19 20.11 19 19V7C19 5.89 18.11 5 17 5H14V4C14 2.89 13.11 2 12 2M12 4C12.55 4 13 4.45 13 5C13 5.55 12.55 6 12 6C11.45 6 11 5.55 11 5C11 4.45 11.45 4 12 4M9 9C10.11 9 11 9.89 11 11C11 12.11 10.11 13 9 13C7.89 13 7 12.11 7 11C7 9.89 7.89 9 9 9M15 9C16.11 9 17 9.89 17 11C17 12.11 16.11 13 15 13C13.89 13 13 12.11 13 11C13 9.89 13.89 9 15 9M8 16H16V18H8V16Z"/>
+        </svg>
+        VS Robotics
+      </h1>
+      <div class="status-indicator">
+        <div class="status-dot"></div>
+        <span id="status-text">DISCONNECTED</span>
+      </div>
+    </div>
+
+    <!-- Left Panel -->
+    <div id="left-panel">
+      <div class="info-card">
+        <h3>📍 POSITION</h3>
+        <div class="info-row">
+          <span class="info-label">X</span>
+          <span class="info-value"><span id="pos-x">0.00</span> m</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Y</span>
+          <span class="info-value"><span id="pos-y">0.00</span> m</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Heading</span>
+          <span class="info-value" id="pos-yaw">0.0°</span>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <h3>⚡ VELOCITY</h3>
+        <div class="info-row">
+          <span class="info-label">Linear</span>
+          <span class="info-value"><span id="vel-linear">0.00</span> m/s</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Angular</span>
+          <span class="info-value"><span id="vel-angular">0.00</span> rad/s</span>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <h3>🗺️ MAP</h3>
+        <div class="info-row">
+          <span class="info-label">Size</span>
+          <span class="info-value" id="map-size">—</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Resolution</span>
+          <span class="info-value" id="map-res">—</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Zoom</span>
+          <span class="info-value" id="zoom-val">50x</span>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <h3>🎯 PATH</h3>
+        <div class="info-row">
+          <span class="info-label">Points</span>
+          <span class="info-value" id="path-length">0</span>
+        </div>
+      </div>
+
+      <!-- More Options at bottom -->
+      <div class="more-section">
+        <button class="more-toggle" id="more-toggle" onclick="toggleMore()">▼ More Options</button>
+        
+        <div class="more-content" id="more-content">
+          <div class="info-card">
+            <h3>🗺️ MAP SELECT</h3>
+            <select id="map-selector">
+              <option value="">Select map...</option>
+              <option value="/home/srikar/ros2_ws/vs/src/my_robot_description/maps/my_3d_map.pcd">Default Map</option>
+            </select>
+          </div>
+
+          <div class="info-card">
+            <h3>📊 MAPPING</h3>
+            <input 
+              type="text" 
+              id="map-name-input" 
+              placeholder="Map name"
+            />
+            <button class="btn" onclick="saveMap()" style="font-size: 11px; padding: 8px;">💾 Save Map</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Map -->
+    <div id="map-container">
+      <div id="zoom-controls">
+        <button class="zoom-btn" onclick="zoom(5)">+</button>
+        <button class="zoom-btn" onclick="zoom(-5)">−</button>
+        <button class="zoom-btn" onclick="recenterMap()" title="Recenter">⌖</button>
+      </div>
+    </div>
+
+    <!-- Right Panel -->
+    <div id="right-panel">
+      <!-- Emergency at TOP -->
+      <div class="control-section">
+        <h3>🛑 EMERGENCY</h3>
+        <button class="btn btn-danger" onclick="stopRobot()">STOP</button>
+      </div>
+
+      <!-- Teleop at BOTTOM (moved via margin-top: auto in CSS) -->
+      <div class="teleop-section">
+        <div class="control-section">
+          <h3>🎮 TELEOP</h3>
+          <div class="teleop-grid">
+            <div class="teleop-btn empty"></div>
+            <div class="teleop-btn" onmousedown="sendTeleopCommand(1, 0)" onmouseup="stopTeleop()">↑</div>
+            <div class="teleop-btn empty"></div>
+            
+            <div class="teleop-btn" onmousedown="sendTeleopCommand(0, 1)" onmouseup="stopTeleop()">←</div>
+            <div class="teleop-btn" onmousedown="stopTeleop()">⏹</div>
+            <div class="teleop-btn" onmousedown="sendTeleopCommand(0, -1)" onmouseup="stopTeleop()">→</div>
+            
+            <div class="teleop-btn empty"></div>
+            <div class="teleop-btn" onmousedown="sendTeleopCommand(-1, 0)" onmouseup="stopTeleop()">↓</div>
+            <div class="teleop-btn empty"></div>
+          </div>
+          
+          <div class="speed-control">
+            <label>Speed</label>
+            <input 
+              type="range" 
+              class="speed-slider" 
+              min="0.1" 
+              max="1.0" 
+              step="0.1" 
+              value="0.5" 
+              oninput="updateTeleopSpeed(this.value)"
+            />
+            <div class="speed-value" id="speed-value">50%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Bar -->
+    <div id="bottom-bar">
+      <div class="help-item">
+        <span class="kbd">Click</span>
+        <span>Set Goal</span>
+      </div>
+      <div class="help-item">
+        <span class="kbd">Scroll</span>
+        <span>Zoom</span>
+      </div>
+      <div class="help-item">
+        <span class="kbd">Ctrl+Drag</span>
+        <span>Pan</span>
+      </div>
+      <div class="help-item">
+        <span class="kbd">C</span>
+        <span>Recenter</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="notification" id="notification"></div>
+</body>
+</html>
