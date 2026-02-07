@@ -1,0 +1,100 @@
+# ====================================================================
+#  OPTIMIZED ROBOT CONFIGURATION
+#  Tuned for Smooth Navigation & Better Performance
+# ====================================================================
+
+# --------------------------------------------------------------------
+# 1. OBSTACLE DETECTION (LiDAR Safety)
+# --------------------------------------------------------------------
+obstacle_detector_3d:
+  ros__parameters:
+    # Robot Physical Dimensions
+    robot_width_half: 0.20        # Increased safety margin
+    robot_length_front: 0.35
+    robot_length_back: -0.35
+    
+    # Dynamic Safety - REMOVED (handled by safety_monitor now)
+    # reaction_time: 1.0
+
+# --------------------------------------------------------------------
+# 2. SAFETY MONITOR (Optimized Gradual Response)
+# --------------------------------------------------------------------
+safety_monitor:
+  ros__parameters:
+    # Safety Zones (in meters from robot front)
+    critical_distance: 0.4        # Emergency stop
+    warning_distance: 0.8         # Reduce to 30% speed
+    caution_distance: 1.2         # Reduce to 60% speed
+    
+    # Control Parameters
+    min_safe_speed: 0.05         # Minimum crawl speed
+    brake_smoothness: 0.15       # Braking deceleration (m/s²)
+
+# --------------------------------------------------------------------
+# 3. LOCAL PLANNER (Optimized for Smooth Motion)
+# --------------------------------------------------------------------
+local_planner:
+  ros__parameters:
+    # Adaptive Lookahead
+    base_lookahead: 0.8          # Default lookahead distance
+    max_lookahead: 1.5           # At maximum speed
+    min_lookahead: 0.5           # At low speed
+    
+    # Obstacle Avoidance
+    obstacle_weight: 0.3         # Reduced for smoother paths
+    
+    # Velocity Limits
+    max_speed: 0.5               # Maximum forward speed (m/s)
+    max_angular_vel: 1.5         # Maximum rotation speed (rad/s)
+    
+    # Acceleration Limits (for smooth motion)
+    max_linear_accel: 0.4        # Linear acceleration (m/s²)
+    max_angular_accel: 1.0       # Angular acceleration (rad/s²)
+    
+    # Goal Detection
+    goal_tolerance: 0.15         # Distance to goal for completion
+    path_completion_angle: 0.3   # Angle threshold (rad)
+
+# --------------------------------------------------------------------
+# 4. A* GLOBAL PLANNER
+# --------------------------------------------------------------------
+a_star_planner:
+  ros__parameters:
+    # Costmap Threshold
+    obstacle_threshold: 85       # Balanced: not too aggressive
+    
+    # Planning Parameters
+    allow_unknown: false         # Don't plan through unknown areas
+    diagonal_movement: true      # Allow diagonal moves (smoother paths)
+
+# --------------------------------------------------------------------
+# 5. CAMERA SAFETY
+# --------------------------------------------------------------------
+camera_safety:
+  ros__parameters:
+    danger_threshold: 0.7        # Stop if obstacle within 0.7m
+    roi_width: 200               # Region of interest width
+    roi_height: 100              # Region of interest height
+    roi_center_x: 320            # ROI horizontal center
+    roi_center_y: 240            # ROI vertical center
+
+# --------------------------------------------------------------------
+# 6. MAP MANAGER
+# --------------------------------------------------------------------
+dynamic_3d_map_manager:
+  ros__parameters:
+    map_frame_id: "map"
+    publish_rate: 5.0            # Publish map 5 times per second
+    ground_filter_min_z: 0.05    # Minimum height to keep
+    ground_filter_max_z: 5.0     # Maximum height to keep
+
+# --------------------------------------------------------------------
+# 7. COSTMAP 2D GENERATOR
+# --------------------------------------------------------------------
+costmap_2d_from_3d:
+  ros__parameters:
+    resolution: 0.05             # 5cm per pixel
+    obstacle_height_min: 0.05    # Minimum obstacle height
+    obstacle_height_max: 2.0     # Maximum obstacle height
+    inflation_radius: 0.25       # Safety inflation around obstacles
+    padding: 1.0                 # Extra map padding (meters)

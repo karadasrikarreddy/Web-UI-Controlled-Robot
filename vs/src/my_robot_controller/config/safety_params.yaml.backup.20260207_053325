@@ -1,0 +1,61 @@
+# ====================================================================
+#  CENTRAL ROBOT CONFIGURATION
+# ====================================================================
+
+# --------------------------------------------------------------------
+# 1. SAFETY MONITOR (The "Ref")
+#    Controls the hard-stop behavior when obstacles are detected.
+# --------------------------------------------------------------------
+obstacle_detector_3d:
+  ros__parameters:
+    # --- Robot Physical Dimensions ---
+    # Actual width is 0.4m. We use 0.30m to verify the "Corridor".
+    # Increase if robot hits doorframes. Decrease if robot refuses to enter doors.
+    robot_width_half: 0.15
+
+    # Distance from Lidar to Front Bumper (Physical = 0.3m)
+    robot_length_front: 0.35
+
+    # Distance from Lidar to Back Bumper
+    robot_length_back: -0.35
+
+    # --- Dynamic Safety Box ---
+    # How many seconds ahead should we project the safety box?
+    # 1.0s @ 0.5m/s = 0.5m box.
+    # Increase to 2.0s for high-speed runs (starts braking earlier).
+    reaction_time: 1.0
+
+# --------------------------------------------------------------------
+# 2. LOCAL PLANNER (The "Driver")
+#    Controls how the robot steers and avoids obstacles smoothly.
+# --------------------------------------------------------------------
+local_planner:
+  ros__parameters:
+    # --- Path Following ---
+    # How far ahead on the green line should we aim? (Meters)
+    # - Low (0.5): Robot hugs the line tightly but might wobble.
+    # - High (1.5): Robot drives smoother lines but cuts corners.
+    lookahead_dist: 1.2
+
+    # --- Obstacle Avoidance Force ---
+    # How strongly should walls "push" the robot away?
+    # - 0.0: Robot ignores obstacles (might hit them if path is bad).
+    # - 2.0: Robot aggressively swerves away from walls.
+    obstacle_weight: 0.2     #0.6
+
+    # --- Speed Limit ---
+    # Maximum linear velocity (m/s).
+    max_speed: 0.4
+
+# --------------------------------------------------------------------
+# 3. A* PLANNER (The "Navigator")
+#    Controls how the global path is calculated.
+# --------------------------------------------------------------------
+a_star_planner:
+  ros__parameters:
+    # --- Obstacle Sensitivity ---
+    # Costmap values range from 0 (Free) to 100 (Occupied).
+    # - 50: Standard threshold.
+    # - 20: Robot treats "risky" areas as walls (safer path).
+    # - 90: Robot will plan paths through narrow gaps (aggressive).
+    obstacle_threshold: 90
