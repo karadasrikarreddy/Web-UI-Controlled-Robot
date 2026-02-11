@@ -1,20 +1,12 @@
 # Web UI Controlled Robot
 
-## Project Features
-- Intuitive web interface for robot control
-- Real-time telemetry and feedback
-- Customizable commands and settings
-- Supports multiple robots
+This repository showcases a robot controlled through a web-based user interface (UI) integrated with ROS2 navigation capabilities. The web UI serves as the primary feature, allowing for intuitive interaction and control of the robot without the need for additional interfaces.
 
-## Code Logic
-- The application communicates with the robot over a secure WebSocket connection.
-- Control commands are sent from the UI to the robot, and telemetry data is received in real time.
-- Each robot acts as a client, maintaining individual states and settings.
+## Features
+- **Web UI Control**: The robot is fully controllable via a web interface, which offers real-time feedback and interaction.
+- **ROS2 Navigation**: Built on ROS2, the robot supports advanced navigation algorithms and functionalities.
 
-## Architecture
-- Built on a client-server model:
-  - **Frontend**: Developed using HTML, CSS, and JavaScript for a responsive user experience.
-  - **Backend**: Node.js server handles WebSocket connections and robot state management.
-- Modular design allows easy addition of features and connectivity to various robot hardware.
+## Getting Started
+Follow the instructions below to set up the robot and control it through the web UI.
 
-This project aims to provide a seamless experience for users controlling robots via a web browser, focusing on simplicity and scalability.
+... (additional instructions can be included here) ...
