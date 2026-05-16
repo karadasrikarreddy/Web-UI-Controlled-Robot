@@ -122,7 +122,7 @@ sudo apt install \
 🚀 Installation
 mkdir -p ~/ros2_ws/src
 cd ~/ros2_ws/src
-git clone https://github.com/YOUR_USERNAME/autonomous-robot.git
+git clone https://github.com/karadasrikarreddy/Web-UI-Controlled-Robot
 
 cd ~/ros2_ws
 colcon build --symlink-install
